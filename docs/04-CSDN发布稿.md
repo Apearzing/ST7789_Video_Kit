@@ -398,7 +398,7 @@ serial.Serial("COM3", 1500000).write(pkt)
 
 完整工程（固件 + 上位机 + 移植文档）已开源：
 
-> GitHub：`https://github.com/<your-name>/ST7789_Video_Kit`
+> GitHub：`https://github.com/Apearzing/ST7789_Video_Kit`
 
 包含：
 

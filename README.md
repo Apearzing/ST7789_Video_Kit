@@ -1,26 +1,28 @@
 # ST7789 Video Kit —— 用 STM32 把小屏变成一台微型播放器
 
-> 电脑负责解码和压缩，单片机只负责收和画。
+> 电脑负责解码和压缩，单片机只负责收和画。  
 > STM32F407 + 1.3 寸 ST7789（240×240）+ 一根 USB 转串口线，视频就能跑起来。
 
-<p>
-<img alt="MCU" src="https://img.shields.io/badge/MCU-STM32F407VET6-03234B">
-<img alt="LCD" src="https://img.shields.io/badge/LCD-ST7789%20240x240-1f6feb">
-<img alt="Bus" src="https://img.shields.io/badge/SPI-18MHz%20Mode3-2ea043">
-<img alt="UART" src="https://img.shields.io/badge/UART-1.5Mbps-8957e5">
-<img alt="License" src="https://img.shields.io/badge/License-MIT-yellow">
+<p>  
+<img alt="MCU" src="https://img.shields.io/badge/MCU-STM32F407VET6-03234B">  
+<img alt="LCD" src="https://img.shields.io/badge/LCD-ST7789%20240x240-1f6feb">  
+<img alt="Bus" src="https://img.shields.io/badge/SPI-18MHz%20Mode3-2ea043">  
+<img alt="UART" src="https://img.shields.io/badge/UART-1.5Mbps-8957e5">  
+<img alt="License" src="https://img.shields.io/badge/License-MIT-yellow">  
 </p>
 
 ---
 
 ## 1. 这是什么
 
+仓库地址：**https://github.com/Apearzing/ST7789_Video_Kit**
+
 一个"电脑推流 → 单片机解码显示"的极简视频播放方案，包含两部分：
 
-| 组成 | 说明 |
-|---|---|
+| 组成                        | 说明                                                              |
+| ------------------------- | --------------------------------------------------------------- |
 | `firmware_hw_spi_st7789/` | STM32F407 固件（Keil + CubeMX），硬件 SPI1 驱动 ST7789，UART1 + DMA 双缓冲收帧 |
-| `pc_video_sender/` | 电脑端推流软件（Python），把视频/摄像头转成 8 位或 16 位色，按自定义帧协议发到串口 |
+| `pc_video_sender/`        | 电脑端推流软件（Python），把视频/摄像头转成 8 位或 16 位色，按自定义帧协议发到串口                |
 
 核心思路是**把重活留在电脑**：分辨率降到 120×120 以内、颜色压到 8 位（RGB332），一帧只有 6~14 KB，1.5 Mbps 的串口也扛得住；单片机端只做「收字节 → 校验 → 整数倍放大 → 刷屏」，不需要 JPEG 解码、不需要外部 SDRAM、不需要 RTOS。
 
@@ -40,12 +42,12 @@
 
 ## 2. 硬件清单
 
-| 器件 | 型号 / 参数 | 备注 |
-|---|---|---|
-| 主控 | STM32F407VET6 开发板 | 8 MHz 晶振，144 MHz 主频 |
-| 屏幕 | ST7789 1.3 寸 IPS，240×240，SPI 接口 | 7 针：CS/DC/RST/SCL/SDA/VCC/GND（+BL） |
-| 串口 | USB 转 TTL 模块（CH340 / CP2102 / PL2303） | 必须支持 1.5 Mbps，CH340 一般可以 |
-| 线材 | 杜邦线若干 | 越短越稳，长线在 1.5 Mbps 下容易丢包 |
+| 器件 | 型号 / 参数                               | 备注                                 |
+| -- | ------------------------------------- | ---------------------------------- |
+| 主控 | STM32F407VET6 开发板                     | 8 MHz 晶振，144 MHz 主频                |
+| 屏幕 | ST7789 1.3 寸 IPS，240×240，SPI 接口       | 7 针：CS/DC/RST/SCL/SDA/VCC/GND（+BL） |
+| 串口 | USB 转 TTL 模块（CH340 / CP2102 / PL2303） | 必须支持 1.5 Mbps，CH340 一般可以           |
+| 线材 | 杜邦线若干                                 | 越短越稳，长线在 1.5 Mbps 下容易丢包            |
 
 > 烧录用的 ST-Link 和这个 USB-TTL 是两回事，需要各插一个 USB 口。
 
@@ -55,25 +57,25 @@
 
 ### 3.1 屏幕（SPI1）
 
-| 屏幕引脚 | STM32 引脚 | 说明 |
-|---|---|---|
-| CS | PA0 | 普通 GPIO，软件片选 |
-| DC | PA1 | 普通 GPIO，命令/数据选择 |
-| RST | PA2 | 普通 GPIO，硬复位 |
-| SCL | **PA5** | SPI1_SCK（AF5），不能改到别的脚 |
-| SDA | **PA7** | SPI1_MOSI（AF5），不能改到别的脚 |
-| VCC | 3V3 | 不要接 5V |
-| GND | GND | 共地 |
-| BL | 3V3 | 背光，可接 PWM 调亮度 |
+| 屏幕引脚 | STM32 引脚 | 说明                     |
+| ---- | -------- | ---------------------- |
+| CS   | PA0      | 普通 GPIO，软件片选           |
+| DC   | PA1      | 普通 GPIO，命令/数据选择        |
+| RST  | PA2      | 普通 GPIO，硬复位            |
+| SCL  | **PA5**  | SPI1_SCK（AF5），不能改到别的脚  |
+| SDA  | **PA7**  | SPI1_MOSI（AF5），不能改到别的脚 |
+| VCC  | 3V3      | 不要接 5V                 |
+| GND  | GND      | 共地                     |
+| BL   | 3V3      | 背光，可接 PWM 调亮度          |
 
 ### 3.2 串口（USART1）
 
-| USB-TTL | STM32 | 说明 |
-|---|---|---|
-| TXD | PA10 | 电脑发 → 单片机收 |
-| RXD | PA9 | 单片机回 ACK（不接也能跑，走单向模式） |
-| GND | GND | **必须接**，很多"收不到数据"都是少了这根 |
-| VCC | 不接 | 板子自己供电，别双供电 |
+| USB-TTL | STM32 | 说明                      |
+| ------- | ----- | ----------------------- |
+| TXD     | PA10  | 电脑发 → 单片机收              |
+| RXD     | PA9   | 单片机回 ACK（不接也能跑，走单向模式）   |
+| GND     | GND   | **必须接**，很多"收不到数据"都是少了这根 |
+| VCC     | 不接    | 板子自己供电，别双供电             |
 
 ```
         ┌──────────────┐        ┌─────────────┐
@@ -94,9 +96,15 @@
 
 ## 4. 五分钟上手
 
+0. **拿代码**：
+
+```bash
+git clone https://github.com/Apearzing/ST7789_Video_Kit.git
+```
+
 1. **接线**：按上表接好屏幕 7 根 + 串口 3 根。
 2. **烧固件**：Keil 打开 `firmware_hw_spi_st7789/MDK-ARM/hardware_spi_st7789.uvprojx` → Rebuild → 下载。
-3. **跑上位机**：双击 `pc_video_sender/dist/ST7789VideoSender.exe`（或 `pip install -r requirements.txt` 后 `python video_sender_gui.py`）。
+3. **跑上位机**：到 [Releases](https://github.com/Apearzing/ST7789_Video_Kit/releases) 下载 `ST7789VideoSender.exe`（单文件，不装 Python）；或直接用源码：`pip install -r requirements.txt`，再 `python video_sender_gui.py`。
 4. **选视频 + 选串口**：波特率保持 1500000，点「开始推送」。
 5. **按一下板子复位键**：方向卡 4 秒 → 黑屏等流 → 出画面。
 6. **结束**：点「停止」。断流后屏上保持最后一帧。
@@ -108,17 +116,19 @@ python video_to_uart.py bad_apple.mp4 --port COM3 --baud 1500000 --size 80 --dep
 python video_to_uart.py CAM:0 --port COM3 --baud 1500000 --preview      # 摄像头直播
 ```
 
+
+
 ---
 
 ## 5. 上位机参数怎么选
 
-| 选项 | 可选值 | 怎么选 |
-|---|---|---|
-| 分辨率 | 120 / 90 / 80 / 60 | **80 是甜点**：3× 放大铺满全屏，17 fps。要清晰选 120（10 fps） |
-| 色彩 | 8 位 RGB332 / 16 位 RGB565 | 8 位数据量减半、帧率翻倍，Bayer 抖动后观感够用；16 位只在对色彩要求高时用 |
-| 等待 ACK | 勾 / 不勾 | **勾上更快更稳**（自适应最快节拍）。RX 线没接会自动降级，不用手动关 |
-| 拉伸填满 | 勾 / 不勾 | 默认不勾 = 按比例居中裁切，16:9 视频不变形 |
-| 循环 / 预览 | — | 按需 |
+| 选项      | 可选值                      | 怎么选                                          |
+| ------- | ------------------------ | -------------------------------------------- |
+| 分辨率     | 120 / 90 / 80 / 60       | **80 是甜点**：3× 放大铺满全屏，17 fps。要清晰选 120（10 fps） |
+| 色彩      | 8 位 RGB332 / 16 位 RGB565 | 8 位数据量减半、帧率翻倍，Bayer 抖动后观感够用；16 位只在对色彩要求高时用   |
+| 等待 ACK  | 勾 / 不勾                   | **勾上更快更稳**（自适应最快节拍）。RX 线没接会自动降级，不用手动关        |
+| 拉伸填满    | 勾 / 不勾                   | 默认不勾 = 按比例居中裁切，16:9 视频不变形                    |
+| 循环 / 预览 | —                        | 按需                                           |
 
 > 60 和 80 的帧率实测一样（都是 17 fps 左右）——因为瓶颈已经从串口变成了「刷屏 51 ms」，所以**同样帧率下当然选 80**。
 
@@ -128,12 +138,12 @@ python video_to_uart.py CAM:0 --port COM3 --baud 1500000 --preview      # 摄像
 
 条件：USART1 = 1.5 Mbps，SPI1 = 18 MHz，8 位色，ACK 模式。
 
-| 分辨率 | 单帧字节 | 串口理论 | 实测帧率 | 放大倍数 |
-|---|---|---|---|---|
-| 120×120 | 14 400 | 10.4 fps | **≈10 fps** | 2× |
-| 90×90 | 8 100 | 18.5 fps | **≈9 fps** | 2× |
-| 80×80 | 6 400 | 23.4 fps | **≈17 fps** | 3× 全屏 |
-| 60×60 | 3 600 | 41.7 fps | **≈17 fps** | 4× 全屏 |
+| 分辨率     | 单帧字节   | 串口理论     | 实测帧率        | 放大倍数  |
+| ------- | ------ | -------- | ----------- | ----- |
+| 120×120 | 14 400 | 10.4 fps | **≈10 fps** | 2×    |
+| 90×90   | 8 100  | 18.5 fps | **≈9 fps**  | 2×    |
+| 80×80   | 6 400  | 23.4 fps | **≈17 fps** | 3× 全屏 |
+| 60×60   | 3 600  | 41.7 fps | **≈17 fps** | 4× 全屏 |
 
 两个天花板：
 
@@ -162,7 +172,8 @@ ST7789_Video_Kit/
 ├─ pc_video_sender/              ← 上位机
 │  ├─ video_to_uart.py           ← 命令行版
 │  ├─ video_sender_gui.py        ← GUI 版（exe 由它打包）
-│  └─ requirements.txt
+│  ├─ requirements.txt
+│  └─ dist/                      ← exe 不入库，请从 Releases 下载
 └─ 先看我_使用说明.txt            ← 原始速查卡（含更多排障口语版）
 ```
 
@@ -170,25 +181,25 @@ ST7789_Video_Kit/
 
 ## 8. 常见问题
 
-**Q：一直 ACK 超时，但画面一点点在动？**
+**Q：一直 ACK 超时，但画面一点点在动？**  
 发送方向通了，是 RXD→PA9 那根回线松了。重插两头，或者直接取消「等待 ACK」。
 
-**Q：COM 口打不开（信号灯超时 121）？**
+**Q：COM 口打不开（信号灯超时 121）？**  
 串口号错 / 被串口助手或 Keil 占用 / 驱动卡死。关掉占用软件，换个 USB 口重插。
 
-**Q：太卡？**
+**Q：太卡？**  
 先降到 80，再确认两边波特率都是 1500000（`usart.c` 和界面必须一致），最后确认勾了 ACK。
 
-**Q：花屏、缺块？**
+**Q：花屏、缺块？**  
 波特率退回 921600（两边一起改并重烧），或者换短一点的杜邦线。
 
-**Q：顶部有黑边 / 画面偏移？**
+**Q：顶部有黑边 / 画面偏移？**  
 屏批次的行偏置不同，改 `st7789_hspi.h` 里的 `ST7789_Y_OFFSET`，试 0 / 40 / 80。
 
-**Q：颜色红蓝反了？**
+**Q：颜色红蓝反了？**  
 `ST7789_Init()` 里 `0x36` 的参数在 `0x00` / `0xC0` 之间切换；也检查 `0x21`（INVON）要不要保留。
 
-**Q：能用 5V 单片机的板子吗？**
+**Q：能用 5V 单片机的板子吗？**  
 不能直接接。ST7789 是 3.3V 逻辑，5V 系统（如 51、AVR）必须加电平转换。
 
 ---
