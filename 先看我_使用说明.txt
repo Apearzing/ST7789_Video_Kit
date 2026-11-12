@@ -1,0 +1,54 @@
+﻿ST7789 串口视频播放套件 —— 先看我（2026-11-02 整理）
+==================================================
+
+一、这是什么
+  用 STM32F407 + 1.3寸 ST7789（240x240）小屏幕，播放电脑上的视频。
+  电脑把视频缩小、压成 8/16 位色，通过 USB 转串口模块发给单片机显示。
+
+二、目录结构
+  ST7789_Video_Kit\
+    先看我_使用说明.txt              ← 就是本文件
+    firmware_hw_spi_st7789\          ← 单片机工程（Keil）
+      MDK-ARM\alarm...               ← 双击 hardware_spi_st7789.uvprojx 打开
+      Core\ Code\ Drivers\         ← 源码和 HAL 库
+      hardware_spi_st7789.ioc        ← CubeMX 配置（改引脚/外设用它打开）
+      README.md                      ← 工程说明
+    pc_video_sender\                 ← 电脑推流软件
+      dist\ST7789VideoSender.exe    ← 双击运行，不用装 Python
+      video_to_uart.py               ← 命令行版源码
+      video_sender_gui.py            ← 图形版源码
+      requirements.txt               ← Python 依赖
+      README_VIDEO.md                ← 详细说明和更新记录
+
+三、5 分钟上手
+  [1] 接屏幕（7根）：CS-PA0 DC-PA1 RES-PA2 SCL-PA5 SDA-PA7 VCC-3V3 GND-GND，BL 接 3V3。
+  [2] 接串口模块：TXD-PA10，RXD-PA9，GND-GND（模块 RX 灯不亮就查这三根）。
+  [3] Keil 打开 firmware 里 MDK-ARM 下的 uvprojx，Rebuild 后下载到板子。
+  [4] 双击 dist 里 ST7789VideoSender.exe：选视频→选串口→点开始推送。
+  [5] 按一下单片机复位键：方向卡 4 秒 → 黑屏等流 → 出画面。
+  [6] 看完点停止。断流 10 秒单片机保持最后画面。
+
+四、软件界面选项
+  串口/刷新：选 USB 转串口的 COM 口，打不开就换口、关串口助手。
+  波特率：默认 1500000（单片机 usart.c 里是同一值，别单改一边）。
+  分辨率：120（清，约10fps）/ 90 / 80（默认，快，约15fps）/ 60（最快，较糊）。
+  色彩：8位快（256色+抖动）/ 16位清（全彩，慢一半）。
+  等待ACK：勾上最稳（自动对速+错帧重发）；RX 线没接就取消勾选走单向。
+  拉伸填满：默认不勾=按比例居中截取，不变形。
+  循环播放 / 预览窗口：按需勾。
+
+五、常见问题
+  Q 一直 ACK 超时但有画面一点点过来？
+  A 发送方向是通的，是 RXD-PA9 回线松了。重插两头，或取消等待ACK。
+  Q COM 口打不开（信号灯超时121）？
+  A 串口号错/被占用/驱动卡死：关占用软件，换 USB 口重插。
+  Q 太卡？A 先降分辨率到 80，再确认波特率 1500000，ACK 模式一般最快。
+  Q 花屏/缺块？A 波特率退回 921600（两边一起改，重烧），或检查杜邦线。
+  Q 顶部有黑边？A 屏批次行偏置不同，改 Code 里 ST7789_Y_OFFSET（0/40/80 试）。
+  Q 颜色红蓝反了？A 初始化 MADCTL 0x00 改 0xC0 相关，问我就调。
+
+六、备注
+  - firmware 里两个 mp4 是测试视频，随便删。
+  - 改了 Python 源码后重打包：pyinstaller --noconfirm --clean --onefile --noconsole --name ST7789VideoSender video_sender_gui.py
+  - 改了单片机源码后 Keil Rebuild 重烧即可，exe 不用换。
+  - 原 E 盘散放的 hardware_spi_st7789、video_uart_sender 已并入本目录；若原位置剩空文件夹残留可随手删。

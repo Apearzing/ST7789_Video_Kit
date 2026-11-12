@@ -1,0 +1,40 @@
+# ---- Keil MDK build output ----
+firmware_hw_spi_st7789/MDK-ARM/hardware_spi_st7789/
+firmware_hw_spi_st7789/MDK-ARM/DebugConfig/
+firmware_hw_spi_st7789/MDK-ARM/RTE/
+*.uvguix.*
+*.uvopt.bak
+*.uvproj.bak
+*.map
+*.lst
+*.o
+*.d
+*.crf
+*.axf
+*.dep
+*.iex
+*.htm
+*.lnp
+*.sct
+*.build_log.htm
+
+# ---- CubeMX backup ----
+*.ioc.bak
+.mxproject.bak
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+build/
+*.spec.bak
+
+# ---- Large binary artefacts (下载请走 GitHub Releases) ----
+*.mp4
+*.avi
+*.mov
+pc_video_sender/dist/*.exe
+
+# ---- OS ----
+Thumbs.db
+desktop.ini
+.DS_Store
